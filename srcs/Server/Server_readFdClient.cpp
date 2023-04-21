@@ -55,74 +55,97 @@ int Server::readFdClient(int &fd) {
 				std::cout << "je rentre dans ping" << std::endl;
 				this->Cmds_ping(fd);
 			}
-
-			if (buffer.find("JOIN") != std::string::npos)
+			if (buffer.find("PASS") != std::string::npos)
 			{
-				std::cout << "je rentre dans join" << std::endl;
-				this->Cmds_join(fd, this->_buffer, _fd_nick_list[fd]);
-			}
-
-			if (buffer.find("PART") != std::string::npos)
-			{
-				std::cout << "je rentre dans part" << std::endl;
-				this->Cmds_part(fd, this->_buffer, _fd_nick_list[fd]);
-			}
-
-			/*---cmd envoye par l'utilisateur client---*/
-			if (buffer.find("NICK") != std::string::npos)
-			{
-				std::cout << "je rentre dans nick" << std::endl;
+				std::cout << "je rentre dans pass" << std::endl;
 				try
 				{
-					command = find_cmd_arg(buffer, "NICK");
-					this->Cmds_nick(fd, command);
+					command = find_cmd_arg(buffer, "PASS");
+					this->_clientList[_fd_nick_list[fd]]->setPassword(command);
 				}
 				catch(const CmdException& e)
 				{
 					std::cerr << e.what() << '\n';
 				}
 			}
-
-			if (buffer.find("USER")!= std::string::npos)
+			if (this->_clientList[_fd_nick_list[fd]]->getPassword() == this->_pass)
 			{
-				std::cout << "je rentre dans user" << std::endl;
-				this->Cmds_user(fd, this->_buffer);
+				if (buffer.find("JOIN") != std::string::npos)
+				{
+					std::cout << "je rentre dans join" << std::endl;
+					this->Cmds_join(fd, this->_buffer, _fd_nick_list[fd]);
+				}
+
+				if (buffer.find("PART") != std::string::npos)
+				{
+					std::cout << "je rentre dans part" << std::endl;
+					this->Cmds_part(fd, this->_buffer, _fd_nick_list[fd]);
+				}
+
+				/*---cmd envoye par l'utilisateur client---*/
+				if (buffer.find("NICK") != std::string::npos)
+				{
+					std::cout << "je rentre dans nick" << std::endl;
+					try
+					{
+						command = find_cmd_arg(buffer, "NICK");
+						this->Cmds_nick(fd, command);
+					}
+					catch(const CmdException& e)
+					{
+						std::cerr << e.what() << '\n';
+					}
+				}
+
+				if (buffer.find("USER")!= std::string::npos)
+				{
+					std::cout << "je rentre dans user" << std::endl;
+					this->Cmds_user(fd, this->_buffer);
+				}
+
+				if (buffer.find("WHOIS") != std::string::npos)
+				{
+					std::cout << "je rentre dans whois" << std::endl;
+					this->Cmds_whois(fd, this->_buffer);
+				}
+
+				if (buffer.find("MODE") != std::string::npos)
+				{
+					std::cout << "je rentre dans mode" << std::endl;
+				}
+
+				if (buffer.find("PRIVMSG") != std::string::npos)
+				{
+					std::cout << "je rentre dans msg" << std::endl;
+					this->Cmds_msg(fd, this->_buffer);
+				}
+
+				if (buffer.find("QUIT") != std::string::npos)
+				{
+					// deconnecter le client
+					std::cout << "QUIT deconnection du fd : "
+						<< fd << std::endl;
+					std::string cap_response = "BYE Goodbye\r\n";
+					std::cout << fd << " [Server->Client]" << cap_response << std::endl;
+					send(fd, cap_response.c_str(), cap_response.length(), 0);
+					return LOGOUT;
+				}
+
+				if (buffer.find("squit", 0) == 0)
+				{
+					std::cout << "[SERVER WILL DISCONNECT...]\n"
+						<< "List [socket] before logout_server: "
+						<< _fds.size() << std::endl;
+					return LOGOUT_SERVER;
+				}
 			}
-
-			if (buffer.find("WHOIS") != std::string::npos)
+			else
 			{
-				std::cout << "je rentre dans whois" << std::endl;
-				this->Cmds_whois(fd, this->_buffer);
-			}
-
-			if (buffer.find("MODE") != std::string::npos)
-			{
-				std::cout << "je rentre dans mode" << std::endl;
-			}
-
-			if (buffer.find("PRIVMSG") != std::string::npos)
-			{
-				std::cout << "je rentre dans msg" << std::endl;
-				this->Cmds_msg(fd, this->_buffer);
-			}
-
-			if (buffer.find("QUIT") != std::string::npos)
-			{
-				// deconnecter le client
-				std::cout << "QUIT deconnection du fd : "
-					<< fd << std::endl;
-				std::string cap_response = "BYE Goodbye\r\n";
-				std::cout << fd << " [Server->Client]" << cap_response << std::endl;
-				send(fd, cap_response.c_str(), cap_response.length(), 0);
-				return LOGOUT;
-			}
-
-			if (buffer.find("squit", 0) == 0)
-			{
-				std::cout << "[SERVER WILL DISCONNECT...]\n"
-					<< "List [socket] before logout_server: "
-					<< _fds.size() << std::endl;
-				return LOGOUT_SERVER;
+					send(fd, "ERR_PASSWDMISMATCH", 19, 0);
+					std::cout << "Erreur d'authentification : mot de passe invalide" << this->_clientList[_fd_nick_list[fd]]->getPassword() << this->_pass << std::endl;
+					close(fd);
+					this->_clientList.erase(_fd_nick_list[fd]);
+					this->_fd_nick_list.erase(fd);
 			}
 		}
 		std::cout << "------------------------------------- " <<  std::endl;

@@ -5,13 +5,13 @@ bool Server::isNewClient(int &client_fd)
 	std::cout << "fd: " << client_fd << " => [isNewClient] "
 		<< this->_buffer << std::endl;
 	Client *temp = new Client(client_fd, _buffer);
-	// if (temp->getPassword() != this->_pass)
-	// {
-	// 	send(client_fd, "ERR_PASSWDMISMATCH", 19, 0);
-	// 	std::cout << "Erreur d'authentification : mot de passe invalide" << temp->getPassword() << this->_pass << std::endl;
-	// 	delete temp;
-	// 	return (1);
-	// }
+	if (temp->getPassword() != this->_pass && temp->getPassword() != "0")
+	{
+		send(client_fd, "ERR_PASSWDMISMATCH", 19, 0);
+		std::cout << "Erreur d'authentification : mot de passe invalide" << temp->getPassword() << this->_pass << std::endl;
+		delete temp;
+		return (1);
+	}
 	if (_clientList.count(temp->getNickname()) > 0)
 	{
 		std::string cap_response = "433 Nickname already exist, please choose another\r\n";
