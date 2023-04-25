@@ -142,10 +142,22 @@ int Server::readFdClient(int &fd) {
 			else
 			{
 					send(fd, "ERR_PASSWDMISMATCH", 19, 0);
-					std::cout << "Erreur d'authentification : mot de passe invalide" << this->_clientList[_fd_nick_list[fd]]->getPassword() << this->_pass << std::endl;
-					close(fd);
-					this->_clientList.erase(_fd_nick_list[fd]);
-					this->_fd_nick_list.erase(fd);
+					std::cout << "Erreur d'authentification : mot de passe invalide " << this->_clientList[_fd_nick_list[fd]]->getPassword() << this->_pass << std::endl;
+					std::string cap_response = "BYE Goodbye\r\n";
+					std::cout << fd << " [Server->Client]" << cap_response << std::endl;
+					send(fd, cap_response.c_str(), cap_response.length(), 0);
+					// try
+					// {
+					// 	this->close_fd(fd, 1);
+					// }
+					// catch(const std::exception& e)
+					// {
+					// 	std::cerr << e.what() << '\n';
+					// }
+					
+					// close(fd);
+					// this->_clientList.erase(_fd_nick_list[fd]);
+					// this->_fd_nick_list.erase(fd);
 			}
 		}
 		std::cout << "------------------------------------- " <<  std::endl;

@@ -18,16 +18,26 @@ void Server::monitoring( void )
 		/**TEST PRINT FD**/
 		std::vector< struct pollfd >::iterator it;
 		for (it = _fds.begin(); it != _fds.end(); it++)
-			std::cout << "_fds fd: " << it->fd << " revents: " << it->revents << std::endl;
+			
 		/*-----*/
 
-		for (it = _fds.begin(); it != _fds.end(); it++) {
+		for (it = _fds.begin(); it != _fds.end(); it++)
+		{
+			std::cout << "_fds fd: " << it->fd << " revents: " << it->revents << std::endl;
+			std::cout << "POLLIN: " << POLLIN << " POLLHUP  " << POLLHUP << std::endl;
 			//data in
 			if (it->revents == POLLIN) {
 				//incoming connection on server
 				if (it->fd == _listener) {
-					this->createConnexion(); //accept()
-					break ;
+					try
+					{
+						this->createConnexion(); //accept()
+						break ;
+					}
+					catch(const std::exception& e)
+					{
+						std::cerr << e.what() << '\n';
+					}
 				}
 				//data available on fd_clients
 				else if (it->fd != _listener) {
@@ -45,7 +55,7 @@ void Server::monitoring( void )
 			}
 			//else if (it->revents & POLLOUT) //le fd est pret pour l'ecriture
 			else if (it->revents == POLLHUP || 
-					it->revents == POLLIN + POLLHUP) {//logout client
+					it->revents == POLLIN + POLLHUP || it->revents == 32) {//logout client - 32: client refuse proprement
 																 
 				std::cout << "fd: " << it->fd << " LOGOUT" << std::endl;
 				this->logoutClient(it, LOGOUT);
