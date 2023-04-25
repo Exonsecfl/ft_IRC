@@ -7,6 +7,7 @@ Server::Server(const char *port, const char *pass, ConfigFile *IRCconfig) :
 	_oper_pass(_IRCconfig->getConfigValue("OPER_PASSWORD")),
 	_addrs(NULL),
 	_listener(-1),
+	_channels(),
 	_addrclient()
 {
 	// http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
@@ -37,6 +38,8 @@ Server::Server(const char *port, const char *pass, ConfigFile *IRCconfig) :
 
 	//set 
 	memset(&_fds, 0, sizeof(_fds));
+	
+
 }
 
 Server::~Server( void ) { 

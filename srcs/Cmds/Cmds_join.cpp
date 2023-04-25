@@ -1,54 +1,69 @@
 #include "Server.hpp"
 #include "Channel.hpp"
+#include "Client.hpp"
 
 
 
 void Server::Cmds_join(int const fd_client, std::string const command, std::string const nickname)
 {
-	std::string pchannel = command.substr(5);
+	std::string pchannel = "";
+	// temporary code
+	if (command.find("JOIN") == 0)
+		pchannel = command.substr(5);
+	else
+		pchannel = command;
+
+
+	std::cout << YEL << pchannel << NOC << std::endl;		
+	//end of temporary code
+
+	// Find IP address
+	std::string ip_client = this->_clientList[nickname]->get_ip();
+	// Find user
+	std::string user_client = this->_clientList[nickname]->get_user();
+
+
 	std::string hostname = this->_hostname;
 
-    if ("DEBUG" ==_IRCconfig->getConfigValue("DEBUG")) // -------------------------------------
-	{
-		// retrieve error code of getaddrinfo command
-		std::cout << BLU;
-		std::cout << "[ SERVER::Cmds_join ]" << std::endl;
-        std::cout << " fd_client :" << fd_client << std::endl;
-        std::cout << " channel :" << pchannel << std::endl;
-    	std::cout << " nickname :" << nickname << std::endl; // WARNING missing info
-		std::cout << NOC;
-	} // --------------------------------------------------------------------------------------
-
-	int max_segment = 10;
+	int max_segment = MAX_JOINS_PER_LINE;
 	std::string segment[max_segment];
 	std::string typeC[max_segment];
 	
 
-	// initialise the 10 potentitial new join
+	// initialise the MAX_JOINS_PER_LINE potentitial new join
 	for (int i = 0 ; i < max_segment ; i++)
 	{
 		segment[i] = "";
 		typeC[i] = "";
 	}
 
-	int i = 0;
-	// identify if manny chanels are transfered in one JOIN and separated by a comma
-	if (pchannel.find(",")==0)
+
+	// detect and parse each iteration of channels in one command
+	for (int i = 0 ; i < max_segment ; i++)
 	{
-		// TBC_VROCH, parse les differents channels demandes
-	}
-	else
-	{
-		typeC[i] = pchannel.substr(0, 1);
-		segment[i] = pchannel.substr(1, pchannel.find("\r") - 1);
+		if (pchannel.find(",", 0) < pchannel.size())
+		{		
+			typeC[i] = pchannel.substr(0, 1);
+			segment[i] = pchannel.substr(1, pchannel.find(",")-1);
+			// reduce the size of the pchannel for the next cycle
+			pchannel = pchannel.substr(pchannel.find(",")+1);
+		}
+		else
+		{
+			typeC[i] = pchannel.substr(0, 1);
+			segment[i] = pchannel.substr(1, pchannel.find("\r")-1);
+			pchannel = "";
+			break;
+		}
 	}
 
-	// management of each channels objects (one object per channel)
 
-	for (int i = 0; i < max_segment; i++)
+	for (int i = 0 ; i < max_segment ; i++)
 	{
 		if (segment[i] == "")
-			continue;
+			break;
+
+		std::cout << YEL << i << "=" << segment[i] << NOC << std::endl;
 
 		// find if the channel is already defined
 		std::map<std::string, Channel*>::iterator it = _channels.find(segment[i]);
@@ -63,54 +78,71 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 			std::map<std::string, Channel*>::iterator it = _channels.find(segment[i]);
 			//  record the user and the ownership of the channel
 			it->second->setConnectedUser(nickname);
-			it->second->setChannelMode(nickname, "#O");
-			
+			it->second->setChannelMode(nickname, "O#");
 		}
 		else
 		{
+			// retieve the user Mode to ensure he's not banned
+			std::map<std::string, Channel * >::iterator it=this->_channels.begin();
+			// block banned user to join the channel
+			if (it->second->getConnectedUsersMode(nickname) == "")	
+			{
+				// ERR_BANNEDFROMCHAN 474 "<channel> :Cannot join channel (+b)"
+				std::string cap_response = ":" + nickname + "!" + user_client + '@' + ip_client + " 474 " + typeC[i] + segment[i] + "\r\n";
+				std::cout << RED << fd_client << " [Server->Client]" << cap_response << NOC << std::endl;
+				send(fd_client, cap_response.c_str(), cap_response.length(), 0);
+				return;
+			}
 			// incase of new connection to the channel, add the new user
 			it->second->setConnectedUser(nickname);
-			it->second->setChannelMode(nickname, " i");
+			it->second->setChannelMode(nickname, "o");
 		}
 
-
-		//std::string cap_response = "JOIN " + segment[i] + "\r\n";
-		//std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
-
-		//send(fd_client, cap_response.c_str(), cap_response.length(), 0);
-
-		// for the channel creator only
+		// send 4 messages
 
 		std::string cap_response = "";
+		
+		
+		// send first message e.g. : :Nickexo_a!User_exo_a@127.0.0.1 JOIN #blabla
+		cap_response = ":" + nickname + "!" + user_client + '@' + ip_client + " JOIN " + typeC[i] + segment[i] + "\r\n";
+		std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 
-	
-			cap_response = ":" + nickname + '@' + "10.11.6.4" + " JOIN " + typeC[i] + segment[i] + "\r\n";
-			std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
+		send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 
-			send(fd_client, cap_response.c_str(), cap_response.length(), 0);
+		// retrieve the list of users attached to the channel
+		std::string channelUsers = this->_channels[segment[i]]->getConnectedUsers();
 
-			// retrieve the list of users attached to the channel
-			std::string channelUsers = it->second->getConnectedUsers();
-			
-			std::cout << "*" << channelUsers << "*";
+		// return the user name of the client
+		std::string userName = this->_clientList[nickname]->get_user();
 
-			//353     RPL_NAMREPLY     "<channel> :[[@|+]<nick> [[@|+]<nick> [...]]]"
-			// cap_response = ":" + nickname + " 353 " + nickname + " = " + typeC[i] + segment[i] + ":@" + nickname + "\r\n";
-			cap_response = ":" + nickname + " 353 " + nickname + " = " + typeC[i] + segment[i] + ":" + channelUsers + "\r\n";
-			std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
+		// send second message with the list of users e.g : 
+		// :exo-debian 353 Nickexo_a = #blabla :@Nickexo_a
+		//353     RPL_NAMREPLY     "<channel> :[[@|+]<nick> [[@|+]<nick> [...]]]"
+		//cap_response = ":" + nickname + " 353 " + nickname + " = " + typeC[i] + segment[i] + ":@" + channelUsers + "\r\n";
+		cap_response = ":" + hostname + " 353 " + nickname + " = " + typeC[i] + segment[i] + ":@" + channelUsers + "\r\n";
+		std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 
-			send(fd_client, cap_response.c_str(), cap_response.length(), 0);
+		send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 
 
-			//366     RPL_ENDOFNAMES    "<channel> :End of /NAMES list"
-			// cap_response = ":" + hostname + " 366 " + nickname + " " + typeC[i] + segment[i] + " :End of NAMES list\r\n";
-			cap_response = ":" + hostname + " 366 " + nickname + " " + typeC[i] + segment[i] + " :End of NAMES list\r\n";
-			std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
+		// send third message ending up the process of joining e.g. :
+		// :exo-debian 366 Nickexo_a #blabla :End of NAMES list
+		//366     RPL_ENDOFNAMES    "<channel> :End of /NAMES list"
+		//cap_response = ":" + hostname + " 366 " + nickname + " " + typeC[i] + segment[i] + " :End of NAMES list\r\n";
+		cap_response = ":" + hostname + " 366 " + nickname + " " + typeC[i] + segment[i] + " :End of NAMES list\r\n";
+		std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 
-			send(fd_client, cap_response.c_str(), cap_response.length(), 0);
+		send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 
+		// send fourth message informing about add user e.g. :
+		// :exo-debian 324 exo_b #blabla [+n]
+		// 324     RPL_CHANNELMODEIS "<channel> <mode> <mode params>"
+		cap_response = ":" + hostname + " 324 " + nickname + " " + typeC[i] + segment[i] + " [+n]\r\n";
+		std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
+
+		send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 
 	}
 
 
-	}
+}
