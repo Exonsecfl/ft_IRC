@@ -36,7 +36,7 @@ void Server::monitoring( void )
 					}
 					catch(const std::exception& e)
 					{
-						std::cerr << e.what() << '\n';
+						std::cerr << e.what() << std::endl;
 					}
 				}
 				//data available on fd_clients
@@ -55,7 +55,7 @@ void Server::monitoring( void )
 			}
 			//else if (it->revents & POLLOUT) //le fd est pret pour l'ecriture
 			else if (it->revents == POLLHUP || 
-					it->revents == POLLIN + POLLHUP || it->revents == 32) {//logout client client refuse proprement
+					it->revents == POLLIN + POLLHUP || it->revents == 32) {//logout client - 32: client refuse proprement - -1 error
 																 
 				std::cout << "fd: " << it->fd << " LOGOUT" << std::endl;
 				this->logoutClient(it, LOGOUT);
