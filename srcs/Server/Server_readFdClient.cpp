@@ -260,7 +260,7 @@ int Server::readFdClient(int &fd)
 				this->Cmds_invite(fd);
 				nocommand = 1;
 			}
-			if (buffer.find("QUIT ") != std::string::npos)
+			if (buffer.find("QUIT") != std::string::npos)
 			{
 				// deconnecter les channels
 				// this->Cmds_quit(fd);
@@ -268,7 +268,7 @@ int Server::readFdClient(int &fd)
 				std::cout << "QUIT deconnection du fd : "
 					<< fd << std::endl;
 
-				std::string cap_response = "BYE Goodbye\r\n";
+				std::string cap_response = "BYE See you soon\r\n";
 				std::cout << fd << " [Server->Client]" << cap_response << std::endl;
 				send(fd, cap_response.c_str(), cap_response.length(), 0);
 				return LOGOUT;
