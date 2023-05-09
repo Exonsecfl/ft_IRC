@@ -263,7 +263,7 @@ int Server::readFdClient(int &fd)
 			if (buffer.find("QUIT ") != std::string::npos)
 			{
 				// deconnecter les channels
-				this->Cmds_quit(fd);
+				// this->Cmds_quit(fd);
 				// deconnecter le client
 				std::cout << "QUIT deconnection du fd : "
 					<< fd << std::endl;

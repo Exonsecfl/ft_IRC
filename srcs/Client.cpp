@@ -84,6 +84,7 @@ Client::~Client()
 	send(_clientFd, cap_response.c_str(), cap_response.length(), 0);
 
 	std::vector<int>::iterator it = _privMsgContactsFd.begin();
+	std::cout << " iterateur sur privmsgContactsFd" << cap_response << std::endl;
 	for( ; it != _privMsgContactsFd.end(); ++it)
 	{
 		std::string cap_response = ":" + _nickname + "!~" + _username + '@' + _ip + " QUIT\r\n";
