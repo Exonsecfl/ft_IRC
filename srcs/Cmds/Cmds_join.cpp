@@ -290,7 +290,7 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 			if (it->second->getChannelConnectedFDMode(fd_client) == "b")
 			{
 				// ERR_BANNEDFROMCHAN 474 "<channel> :Cannot join channel (+b)"
-				std::string cap_response = ":" + hostname + " 474 " + nickname + " " + typeC + segment + " [+n]\r\n";
+				std::string cap_response = ":" + hostname + " 474 " + nickname + " " + typeC + segment + " [+t]\r\n";
 				std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 				send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 				continue;
@@ -303,7 +303,7 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 				if (it->second->checkChannelInvite(fd_client) == false)
 				{
 					// ERR_INVITEONLYCHAN 473 "<channel> :Cannot join channel (+i)"
-					std::string cap_response = ":" + hostname + " 473 " + nickname + " " + typeC + segment + " [+n]\r\n";
+					std::string cap_response = ":" + hostname + " 473 " + nickname + " " + typeC + segment + " [+t]\r\n";
 					std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 					send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 					continue;
@@ -314,7 +314,7 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 			if (channelMode.find("k") < channelMode.length() && channelPass != FDpass)
 			{
 				// ERR_BADCHANNELKEY 475 "<channel> :Cannot join channel (+k)"
-				std::string cap_response = ":" + hostname + " 475 " + nickname + " " + typeC + segment + " [+n]\r\n";
+				std::string cap_response = ":" + hostname + " 475 " + nickname + " " + typeC + segment + " [+t]\r\n";
 				std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 				send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 				continue;
@@ -324,7 +324,7 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 			if (channelMode.find("l") < channelMode.length() && it_C->second->getNbUsers() + 1 > it_C->second->getChannelLimit())
 			{
 				// ERR_CHANNELISFULL 471 "<channel> :Cannot join channel (+l)"
-				std::string cap_response = ":" + hostname + " 471 " + nickname + " " + typeC + segment + " [+n]\r\n";
+				std::string cap_response = ":" + hostname + " 471 " + nickname + " " + typeC + segment + " [+t]\r\n";
 				std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 				send(fd_client, cap_response.c_str(), cap_response.length(), 0);
 				continue;
@@ -388,7 +388,7 @@ void Server::Cmds_join(int const fd_client, std::string const command, std::stri
 		// send fourth message informing about add user e.g. :
 		// :exo-debian 324 exo_b #blabla [+n]
 		// 324     RPL_CHANNELMODEIS "<channel> <mode> <mode params>"
-		cap_response = ":" + hostname + " 324 " + nickname + " " + typeC + segment + " [+n]\r\n";
+		cap_response = ":" + hostname + " 324 " + nickname + " " + typeC + segment + " [+t]\r\n";
 		std::cout << fd_client << " [Server->Client]" << cap_response << std::endl;
 
 		send(fd_client, cap_response.c_str(), cap_response.length(), 0);
