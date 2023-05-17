@@ -4,7 +4,8 @@ bool Server::isNewClient(int &client_fd, std::string buffer)
 {
 	std::cout << "fd: " << client_fd << " => [isNewClient] "
 		<< buffer << std::endl;
-	Client *temp = new Client(client_fd, buffer);
+	Client *temp;
+	temp = new Client(client_fd, buffer);
 	std::string nick = temp->getNickname();
 
 	if (temp->getPassword() != this->_pass && temp->getPassword() != "0")
@@ -24,7 +25,7 @@ bool Server::isNewClient(int &client_fd, std::string buffer)
 		delete temp;
 		return (false);
 	}
-	if (_clientList.count(nick) > 0)
+	if (_clientList.count(nick) > 0 && nick != "#" )
 	{
 		if (temp->get_ip() != _clientList[temp->getNickname()]->get_ip() || temp->get_data() != _clientList[temp->getNickname()]->get_data())
 		{
@@ -34,6 +35,10 @@ bool Server::isNewClient(int &client_fd, std::string buffer)
 		}
 		delete temp;
 		return (false);
+	}
+	if (temp->getNickname() == "#")
+	{
+		temp->setNickname(to_str(client_fd));
 	}
 	this->_clientList.insert(std::pair<std::string, Client *>(temp->getNickname(), temp));
 	this->_fd_nick_list.insert(std::pair<int, std::string>(client_fd, temp->getNickname()));
